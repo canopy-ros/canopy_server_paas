@@ -1,2 +1,2 @@
-# roscloud_caas
-Computation as a service (CaaS) for roscloud
+# roscloud_paas
+Platform as a service (PaaS) for roscloud
