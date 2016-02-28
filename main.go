@@ -6,6 +6,7 @@ import (
     "github.com/docker/engine-api/client"
     "github.com/docker/engine-api/types"
     "time"
+    "flag"
 )
 
 type hub struct {
@@ -14,7 +15,11 @@ type hub struct {
     containers map[string]*Container
 }
 
+var addr = flag.String("addr", "localhost", "http service addr")
+var port = flag.String("port", "5000", "http service port")
+
 func main() {
+    flag.Parse()
     log.Println("ROSCloud container management server started.")
     defaultHeaders := map[string]string{"User-Agent": "engine-api-cli-1.0"}
     cli, err := client.NewClient("unix:///var/run/docker.sock",
@@ -77,6 +82,6 @@ func main() {
                 }
             }  
         }
-        time.Sleep(100* time.Millisecond)
+        time.Sleep(100 * time.Millisecond)
     }
 }

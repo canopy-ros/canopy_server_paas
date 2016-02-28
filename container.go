@@ -17,7 +17,7 @@ type Container struct {
 
 func create(cli *client.Client, name string, h *hub) *Container {
     containerOptions := container.Config{
-        Hostname:"",
+        Hostname:name,
         User:"",
         AttachStdin:true,
         AttachStdout:true,
@@ -25,8 +25,9 @@ func create(cli *client.Client, name string, h *hub) *Container {
         Tty:true,
         OpenStdin:true,
         StdinOnce:true,
-        Image:"ros",
+        Image:"roscloud",
         WorkingDir:"",
+        Env:[]string{"HOST=" + *addr, "PORT=" + *port},
     }
     hostOptions := container.HostConfig{
         NetworkMode: "bridge",
