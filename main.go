@@ -34,10 +34,12 @@ func main() {
     for _, cont := range containers {
         log.Println("Found container:", cont.Names[0][1:])
         h.containers[cont.Names[0][1:]] = &Container{name: cont.Names[0][1:], id: cont.ID, started: false, h: &h}
+        go h.containers[cont.Names[0][1:]].statusUpdater()
     }
     options = types.ContainerListOptions{All: false}
     containers, err = cli.ContainerList(options)
     for _, cont := range containers {
+        log.Println("Container already started:", cont.Names[0][1:])
         h.containers[cont.Names[0][1:]].started = true
     }
     for {
@@ -53,6 +55,7 @@ func main() {
             } else {
                 h.containers[cont] = create(cli, cont, &h)
                 h.containers[cont].start()
+                go h.containers[cont].statusUpdater()
             }
         }
         options = types.ContainerListOptions{All: true}
@@ -74,6 +77,6 @@ func main() {
                 }
             }  
         }
-        time.Sleep(1)
+        time.Sleep(100* time.Millisecond)
     }
 }

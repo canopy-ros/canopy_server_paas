@@ -1,8 +1,8 @@
 package main
 
 import (
-    //"github.com/garyburd/redigo/redis"
     "log"
+    "time"
     "github.com/docker/engine-api/types/container"
     "github.com/docker/engine-api/types/network"
     "github.com/docker/engine-api/client"
@@ -38,6 +38,25 @@ func create(cli *client.Client, name string, h *hub) *Container {
     }
     log.Println("Created container:", name)
     return &Container{name: name, id: id.ID, started: false, h: h}
+}
+
+func (c *Container) statusUpdater() {
+    for {
+        list, err := c.h.cli.ContainerTop(c.id, []string{})
+        if err == nil {
+            c.h.dbw.write("HMSET", "containers:" + c.name, "processes", list.Processes)
+        } else {
+            c.h.dbw.write("HMSET", "containers:" + c.name, "processes", "[]")
+        }
+        // read, err := c.h.cli.ContainerStats(context.TODO(), c.id, false)
+        // if err == nil {
+        //     out := make([]byte, 1788)
+        //     read.Read(out)
+        //     read.Close()
+        // }
+        c.h.dbw.write("HMSET", "containers:" + c.name, "running", c.started)
+        time.Sleep(100 * time.Millisecond)
+    }
 }
 
 func (c *Container) start() {
