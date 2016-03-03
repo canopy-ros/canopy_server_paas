@@ -6,6 +6,7 @@ import (
     "github.com/docker/engine-api/types/container"
     "github.com/docker/engine-api/types/network"
     "github.com/docker/engine-api/client"
+    "strings"
 )
 
 type Container struct {
@@ -16,6 +17,7 @@ type Container struct {
 }
 
 func create(cli *client.Client, name string, h *hub) *Container {
+    split := strings.SplitN(name, "_", 2)
     containerOptions := container.Config{
         Hostname:name,
         User:"",
@@ -27,7 +29,7 @@ func create(cli *client.Client, name string, h *hub) *Container {
         StdinOnce:true,
         Image:"roscloud",
         WorkingDir:"",
-        Env:[]string{"HOST=" + *addr, "PORT=" + *port},
+        Env:[]string{"HOST=" + *addr, "PORT=" + *port, "KEY=" + split[0], "NAME=" + split[1]},
     }
     hostOptions := container.HostConfig{
         NetworkMode: "bridge",
