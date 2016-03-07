@@ -7,6 +7,7 @@ import (
     "github.com/docker/engine-api/types"
     "time"
     "flag"
+    "strings"
 )
 
 type hub struct {
@@ -53,11 +54,17 @@ func main() {
     }
     for {
         // Get the containers that should be running
-        reply, _ := redis.Values(dbw.write("SSCAN", "containers:list", 0, "match", "*"))
+        reply, _ := redis.Values(dbw.write("SCAN", 0, "match", "containers:*:status"))
         var temp int
         var list []string
         reply, _ = redis.Scan(reply, &temp, &list)
         for _, cont := range list {
+            split := strings.Split(cont, ":")
+            status, _ := redis.String(dbw.write("GET", cont))
+            cont = split[1];
+            if status != "running" {
+                continue;
+            }
             if val, ok := h.containers[cont]; ok { // If container exists, start it
                 if !val.started {
                     val.start()
@@ -73,16 +80,16 @@ func main() {
         containers, err = cli.ContainerList(options)
         for _, cont := range containers {
             // Check if container is supposed to be running
-            exists, _ := redis.Int(dbw.write("SISMEMBER", "containers:list", cont.Names[0][1:]))
+            status, _ := redis.String(dbw.write("GET", "containers:" + cont.Names[0][1:] + ":status"))
             if cont.Status[:2] == "Up" {
-                if exists == 0 { // If it is running but not supposed to be, stop it
+                if status == "stopped" { // If it is running but not supposed to be, stop it
                     h.containers[cont.Names[0][1:]].stop()
                 } else { // Update container object status
                     h.containers[cont.Names[0][1:]].started = true
                 }
             }
             if cont.Status[:6] == "Exited" {
-                if exists == 1 { // If it is not running but supposed to be, start it
+                if status == "running" { // If it is not running but supposed to be, start it
                     h.containers[cont.Names[0][1:]].start()
                 } else { // Update container object status
                     h.containers[cont.Names[0][1:]].started = false

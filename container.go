@@ -25,7 +25,7 @@ func create(cli *client.Client, name string, h *hub) *Container {
         Tty:true,
         OpenStdin:true,
         StdinOnce:true,
-        Image:"roscloud",
+        Image:"canopy",
         WorkingDir:"",
         Env:[]string{"HOST=" + *addr, "PORT=" + *port},
     }
