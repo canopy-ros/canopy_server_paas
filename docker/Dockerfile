@@ -24,7 +24,7 @@ RUN pip install tornado
 
 # setup roscloud_client
 RUN git clone https://github.com/roscloud/roscloud_client /root/catkin_ws/src/roscloud_client
-COPY ./roscloud_server.launch /root/catkin_ws/src/roscloud_client/launch/
+COPY ./roscloud_container.launch /root/catkin_ws/src/roscloud_client/launch/
 
 # setup entrypoint
 COPY ./roscloud_entrypoint.sh /
