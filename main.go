@@ -42,7 +42,7 @@ func main() {
     containers, err := cli.ContainerList(options)
     for _, cont := range containers {
         log.Println("Found container:", cont.Names[0][1:])
-        h.containers[cont.Names[0][1:]] = &Container{name: cont.Names[0][1:], id: cont.ID, started: false, h: &h}
+        h.containers[cont.Names[0][1:]] = &Container{name: cont.Names[0][1:], id: cont.ID, started: false, h: &h, quit: make(chan int)}
         go h.containers[cont.Names[0][1:]].statusUpdater()
     }
     // Set running containers as running in their corresponding container objects
@@ -62,17 +62,22 @@ func main() {
             split := strings.Split(cont, ":")
             status, _ := redis.String(dbw.write("GET", cont))
             cont = split[1];
-            if status != "running" {
-                continue;
-            }
             if val, ok := h.containers[cont]; ok { // If container exists, start it
-                if !val.started {
-                    val.start()
+                if status == "running" {
+                    if !val.started {
+                        val.start()
+                    }
+                } else if status == "stopped" {
+                    if val.started {
+                        val.stop();
+                    }
                 }
             } else { // If container does not exist, create it and start it
                 h.containers[cont] = create(cli, cont, &h)
-                h.containers[cont].start()
                 go h.containers[cont].statusUpdater()
+                if status == "running" {
+                    h.containers[cont].start()
+                }
             }
         }
         // Synchronize containers and container object statuses
@@ -81,20 +86,27 @@ func main() {
         for _, cont := range containers {
             // Check if container is supposed to be running
             status, _ := redis.String(dbw.write("GET", "containers:" + cont.Names[0][1:] + ":status"))
-            if cont.Status[:2] == "Up" {
-                if status == "stopped" { // If it is running but not supposed to be, stop it
+            if status == "" { // Container removed
+                if h.containers[cont.Names[0][1:]].started {
                     h.containers[cont.Names[0][1:]].stop()
-                } else { // Update container object status
-                    h.containers[cont.Names[0][1:]].started = true
+                }
+                h.containers[cont.Names[0][1:]].remove()
+                delete(h.containers, cont.Names[0][1:])
+            } else {
+                if cont.Status == "" || cont.Status[:6] == "Exited" {
+                    if status == "running" { // If it is not running but supposed to be, start it
+                        h.containers[cont.Names[0][1:]].start()
+                    } else { // Update container object status
+                        h.containers[cont.Names[0][1:]].started = false
+                    }
+                } else if cont.Status[:2] == "Up" {
+                    if status == "stopped" { // If it is running but not supposed to be, stop it
+                        h.containers[cont.Names[0][1:]].stop()
+                    } else { // Update container object status
+                        h.containers[cont.Names[0][1:]].started = true
+                    }
                 }
             }
-            if cont.Status[:6] == "Exited" {
-                if status == "running" { // If it is not running but supposed to be, start it
-                    h.containers[cont.Names[0][1:]].start()
-                } else { // Update container object status
-                    h.containers[cont.Names[0][1:]].started = false
-                }
-            }  
         }
         time.Sleep(100 * time.Millisecond)
     }
