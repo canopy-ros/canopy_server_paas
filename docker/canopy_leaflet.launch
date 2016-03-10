@@ -4,11 +4,11 @@
     <arg name="port" default="50000"/>
     <arg name="container_name" default="" />
     <arg name="key" default=""/>
-    <node pkg="roscloud_client" type="client_node.py" name="roscloud_container" output="screen">
-        <param name="name" value="roscloud_container_$(arg container_name)"/>
+    <node pkg="canopy_client" type="client_node.py" name="canopy_leaflet" output="screen">
+        <param name="name" value="canopy_leaflet_$(arg container_name)"/>
         <param name="host" value="$(arg host)"/>
         <param name="port" value="$(arg port)"/>
         <param name="private_key" value="$(arg key)" />
-        <param name="description" value="ROSCloud Container - $(arg container_name)" />
+        <param name="description" value="Canopy Leaflet - $(arg container_name)" />
     </node>
 </launch>

@@ -22,9 +22,9 @@ WORKDIR /
 RUN sudo apt-get -y install python-pip
 RUN pip install tornado
 
-# setup roscloud_client
+# setup canopy_client
 RUN git clone https://github.com/canopy-ros/canopy_client /root/catkin_ws/src/canopy_client
-COPY ./canopy_container.launch /root/catkin_ws/src/canopy_client/launch/
+COPY ./canopy_leaflet.launch /root/catkin_ws/src/canopy_client/launch/
 
 # setup entrypoint
 COPY ./canopy_entrypoint.sh /
