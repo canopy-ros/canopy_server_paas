@@ -21,7 +21,7 @@ var port = flag.String("port", "5000", "http service port")
 
 func main() {
     flag.Parse()
-    log.Println("ROSCloud container management server started.")
+    log.Println("Canopy container management server started.")
     // Start docker client
     defaultHeaders := map[string]string{"User-Agent": "engine-api-cli-1.0"}
     cli, err := client.NewClient("unix:///var/run/docker.sock",

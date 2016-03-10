@@ -23,12 +23,12 @@ RUN sudo apt-get -y install python-pip
 RUN pip install tornado
 
 # setup roscloud_client
-RUN git clone https://github.com/roscloud/roscloud_client /root/catkin_ws/src/roscloud_client
-COPY ./roscloud_container.launch /root/catkin_ws/src/roscloud_client/launch/
+RUN git clone https://github.com/canopy-ros/canopy_client /root/catkin_ws/src/canopy_client
+COPY ./canopy_container.launch /root/catkin_ws/src/canopy_client/launch/
 
 # setup entrypoint
-COPY ./roscloud_entrypoint.sh /
-RUN chmod +x /roscloud_entrypoint.sh
+COPY ./canopy_entrypoint.sh /
+RUN chmod +x /canopy_entrypoint.sh
 
-ENTRYPOINT ["/roscloud_entrypoint.sh"]
+ENTRYPOINT ["/canopy_entrypoint.sh"]
 CMD ["bash"]
