@@ -7,6 +7,7 @@ import (
     "github.com/docker/engine-api/types/network"
     "github.com/docker/engine-api/client"
     "github.com/docker/engine-api/types"
+    "golang.org/x/net/context"
     "strings"
     "encoding/json"
 )
@@ -45,7 +46,7 @@ func create(cli *client.Client, name string, h *hub) *Container {
     hostOptions := container.HostConfig{
         NetworkMode: "bridge",
     }
-    id, err := cli.ContainerCreate(&containerOptions, &hostOptions, &network.NetworkingConfig{}, name)
+    id, err := cli.ContainerCreate(context.Background(), &containerOptions, &hostOptions, &network.NetworkingConfig{}, name)
     if err != nil {
         log.Println(err)
         return nil
@@ -61,7 +62,7 @@ func (c *Container) statusUpdater() {
             case <- c.quit:
                 exit = true
             default:
-            list, err := c.h.cli.ContainerTop(c.id, []string{})
+            list, err := c.h.cli.ContainerTop(context.Background(), c.id, []string{})
             if err == nil {
                 processes := make([]Process, 0)
                 for _, p := range list.Processes {
@@ -88,7 +89,7 @@ func (c *Container) statusUpdater() {
 }
 
 func (c *Container) start() {
-    err := c.h.cli.ContainerStart(c.id)
+    err := c.h.cli.ContainerStart(context.Background(), c.id)
     if err != nil {
         return
     }
@@ -97,18 +98,17 @@ func (c *Container) start() {
 }
 
 func (c *Container) stop() {
-    c.h.cli.ContainerStop(c.id, 10)
+    c.h.cli.ContainerStop(context.Background(), c.id, 10)
     c.started = false
     log.Println("Stopped container:", c.name)
 }
 
 func (c *Container) remove() {
     containerRmOptions := types.ContainerRemoveOptions{
-        ContainerID: c.id,
         RemoveVolumes: true,
         Force: true,
     }
-    c.h.cli.ContainerRemove(containerRmOptions)
+    c.h.cli.ContainerRemove(context.Background(), c.id, containerRmOptions)
     c.started = false
     close(c.quit)
     log.Println("Removed container:", c.name)

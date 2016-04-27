@@ -5,6 +5,7 @@ import (
     "github.com/garyburd/redigo/redis"
     "github.com/docker/engine-api/client"
     "github.com/docker/engine-api/types"
+    "golang.org/x/net/context"
     "time"
     "flag"
     "strings"
@@ -39,7 +40,7 @@ func main() {
     h := hub{cli: cli, dbw: &dbw, containers: make(map[string]*Container)}
     // List all existing containers and create container objects for them
     options := types.ContainerListOptions{All: true}
-    containers, err := cli.ContainerList(options)
+    containers, err := cli.ContainerList(context.Background(), options)
     for _, cont := range containers {
         log.Println("Found container:", cont.Names[0][1:])
         h.containers[cont.Names[0][1:]] = &Container{name: cont.Names[0][1:], id: cont.ID, started: false, h: &h, quit: make(chan int)}
@@ -47,7 +48,7 @@ func main() {
     }
     // Set running containers as running in their corresponding container objects
     options = types.ContainerListOptions{All: false}
-    containers, err = cli.ContainerList(options)
+    containers, err = cli.ContainerList(context.Background(), options)
     for _, cont := range containers {
         log.Println("Container already started:", cont.Names[0][1:])
         h.containers[cont.Names[0][1:]].started = true
@@ -82,7 +83,7 @@ func main() {
         }
         // Synchronize containers and container object statuses
         options = types.ContainerListOptions{All: true}
-        containers, err = cli.ContainerList(options)
+        containers, err = cli.ContainerList(context.Background(), options)
         for _, cont := range containers {
             // Check if container is supposed to be running
             status, _ := redis.String(dbw.write("GET", "containers:" + cont.Names[0][1:] + ":status"))
