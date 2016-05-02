@@ -35,8 +35,9 @@ def run_workflow(filename):
     build_dict = parse_yaml(filename)
     for key in build_order:
         func = build_order[key]
-        for proc in build_dict[key]:
-            func(proc)
+        if key in build_dict.keys():
+            for proc in build_dict[key]:
+                func(proc)
 
 
 if __name__ == "__main__":
