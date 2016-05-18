@@ -9,6 +9,7 @@ import (
     "time"
     "flag"
     "strings"
+    "gopkg.in/mgo.v2"
 )
 
 type hub struct {
@@ -38,12 +39,15 @@ func main() {
     dbw := dbwriter{redisconn: &c, commChannel: make(chan command, 2)}
     go dbw.writer()
     h := hub{cli: cli, dbw: &dbw, containers: make(map[string]*Container)}
+    // Connect to MongoDB database
+    session, err := mgo.Dial(":3001")
+    defer session.Close()
     // List all existing containers and create container objects for them
     options := types.ContainerListOptions{All: true}
     containers, err := cli.ContainerList(context.Background(), options)
     for _, cont := range containers {
         log.Println("Found container:", cont.Names[0][1:])
-        h.containers[cont.Names[0][1:]] = &Container{name: cont.Names[0][1:], id: cont.ID, started: false, h: &h, quit: make(chan int)}
+        h.containers[cont.Names[0][1:]] = &Container{name: cont.Names[0][1:], id: cont.ID, started: false, h: &h, quit: make(chan int), mgoSession: session}
         go h.containers[cont.Names[0][1:]].statusUpdater()
     }
     // Set running containers as running in their corresponding container objects
@@ -74,7 +78,7 @@ func main() {
                     }
                 }
             } else { // If container does not exist, create it and start it
-                h.containers[cont] = create(cli, cont, &h)
+                h.containers[cont] = create(cli, cont, &h, session)
                 go h.containers[cont].statusUpdater()
                 if status == "running" {
                     h.containers[cont].start()

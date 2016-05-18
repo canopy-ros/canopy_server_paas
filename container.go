@@ -10,6 +10,8 @@ import (
     "golang.org/x/net/context"
     "strings"
     "encoding/json"
+    "gopkg.in/mgo.v2"
+    "gopkg.in/mgo.v2/bson"
 )
 
 type Container struct {
@@ -18,6 +20,7 @@ type Container struct {
     started bool
     h *hub
     quit chan int
+    mgoSession *mgo.Session
 }
 
 type Process struct {
@@ -28,7 +31,13 @@ type Process struct {
     Time string `json:"time,omitempty"`
 }
 
-func create(cli *client.Client, name string, h *hub) *Container {
+type MgoURL struct {
+    Container string `bson:"container,omitempty"`
+    User string `bson:"user,omitempty"`
+    Url string `bson:"url,omitempty"`
+}
+
+func create(cli *client.Client, name string, h *hub, session *mgo.Session) *Container {
     split := strings.SplitN(name, "_", 2)
     containerOptions := container.Config{
         Hostname:name,
@@ -52,7 +61,7 @@ func create(cli *client.Client, name string, h *hub) *Container {
         return nil
     }
     log.Println("Created container:", name)
-    return &Container{name: name, id: id.ID, started: false, h: h, quit: make(chan int)}
+    return &Container{name: name, id: id.ID, started: false, h: h, quit: make(chan int), mgoSession: session}
 }
 
 func (c *Container) statusUpdater() {
@@ -89,6 +98,15 @@ func (c *Container) statusUpdater() {
 }
 
 func (c *Container) start() {
+    col := c.mgoSession.DB("meteor").C("urls")
+    user := c.name[:strings.Index(c.name, "_")]
+    name := c.name[strings.Index(c.name, "_") + 1:]
+    result := MgoURL{}
+    e := col.Find(bson.M{"container": name, "user": user}).One(&result)
+    log.Println(result.Url)
+    if e != nil {
+        log.Fatal(e)
+    }
     err := c.h.cli.ContainerStart(context.Background(), c.id)
     if err != nil {
         return
