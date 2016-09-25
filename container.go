@@ -3,6 +3,8 @@ package main
 import (
     "log"
     "time"
+    "os"
+    "os/exec"
     "github.com/docker/engine-api/types/container"
     "github.com/docker/engine-api/types/network"
     "github.com/docker/engine-api/client"
@@ -12,6 +14,11 @@ import (
     "encoding/json"
     "gopkg.in/mgo.v2"
     "gopkg.in/mgo.v2/bson"
+    "text/template"
+    "path"
+    "runtime"
+    "bufio"
+    "io/ioutil"
 )
 
 type Container struct {
@@ -97,15 +104,46 @@ func (c *Container) statusUpdater() {
     }
 }
 
+type TemplateStruct struct {
+    Array string
+}
 func (c *Container) start() {
     col := c.mgoSession.DB("meteor").C("urls")
     user := c.name[:strings.Index(c.name, "_")]
     name := c.name[strings.Index(c.name, "_") + 1:]
-    result := MgoURL{}
-    e := col.Find(bson.M{"container": name, "user": user}).One(&result)
-    log.Println(result.Url)
+    result := []MgoURL{}
+    iter := col.Find(bson.M{"container": name, "user": user}).Iter()
+    e := iter.All(&result)
+    log.Println(result)
     if e != nil {
-        log.Fatal(e)
+        log.Println(e)
+    } else {
+        _, filename, _, _ := runtime.Caller(1)
+        abspath := path.Join(path.Dir(filename), "docker/package_loader_template.sh")
+        tmpl, err := template.ParseFiles(abspath)
+        arrayString := ""
+        for _, item := range result {
+            arrayString += "\"" + item.Url + "\" "
+        }
+        data := TemplateStruct{arrayString}
+        if err != nil {
+            log.Println(err)
+        }
+        tmpfile, err := ioutil.TempFile(path.Dir(filename), c.name)
+        writer := bufio.NewWriter(tmpfile)
+        err = tmpl.Execute(writer, data)
+        writer.Flush()
+        tmpfile.Close()
+        if err == nil {
+            //err = c.h.cli.CopyToContainer(context.Background(), c.id, "package_loader.sh", bufio.NewReader(tmpfile), types.CopyToContainerOptions{false})
+            exec.Command("docker", "cp", tmpfile.Name(), c.name + ":/package_loader.sh").Output()
+            if err != nil {
+                log.Println(err)
+            }
+            os.Remove(tmpfile.Name())
+        } else {
+            log.Println(err)
+        }
     }
     err := c.h.cli.ContainerStart(context.Background(), c.id)
     if err != nil {
