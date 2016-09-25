@@ -1,7 +1,7 @@
 FROM ros:indigo-ros-base
 
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
-RUN apt-get -y update
+RUN apt-get -y update #redo
 RUN apt-get -y install build-essential
 
 # setup catkin
@@ -25,6 +25,10 @@ RUN pip install tornado
 # setup canopy_client
 RUN git clone https://github.com/canopy-ros/canopy_client /root/catkin_ws/src/canopy_client
 COPY ./canopy_leaflet.launch /root/catkin_ws/src/canopy_client/launch/
+
+# copy package remote run script
+COPY ./canopy_remote_run.py /
+RUN chmod +x /canopy_remote_run.py
 
 # setup entrypoint
 COPY ./canopy_entrypoint.sh /

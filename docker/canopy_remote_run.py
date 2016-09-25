@@ -9,7 +9,7 @@ ROS_RELEASE = "indigo"
 
 
 def install_ros_packages(package):
-    install_template = "sudo apt-get install ros-{}-{}"
+    install_template = "sudo apt-get install -y ros-{}-{}"
     install_line = install_template.format(ROS_RELEASE, package)
     os.system(install_line)
 
