@@ -59,10 +59,20 @@ func main() {
     }
     for {
         // Get the containers that should be running
-        reply, _ := redis.Values(dbw.write("SCAN", 0, "match", "containers:*:status"))
-        var temp int
+        iter := 0
         var list []string
-        reply, _ = redis.Scan(reply, &temp, &list)
+        for {
+            reply, _ := redis.Values(dbw.write("SCAN", iter, "match", "containers:*:status"))
+            var temp int
+            var templist []string
+            reply, _ = redis.Scan(reply, &temp, &templist)
+            iter = temp
+            list = append(list, templist...)
+            if iter == 0 {
+                break
+            }
+        }
+        log.Println(list)
         for _, cont := range list {
             split := strings.Split(cont, ":")
             status, _ := redis.String(dbw.write("GET", cont))
