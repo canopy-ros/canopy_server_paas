@@ -145,7 +145,12 @@ func (c *Container) start() {
             log.Println(err)
         }
     }
-    err := c.h.cli.ContainerStart(context.Background(), c.id)
+
+    start_options := types.ContainerStartOptions{
+        CheckpointID: "",
+    }
+
+    err := c.h.cli.ContainerStart(context.Background(), c.id, start_options)
     if err != nil {
         return
     }
@@ -154,7 +159,8 @@ func (c *Container) start() {
 }
 
 func (c *Container) stop() {
-    c.h.cli.ContainerStop(context.Background(), c.id, 10)
+    var dur = time.Duration(10)
+    c.h.cli.ContainerStop(context.Background(), c.id, &dur)
     c.started = false
     log.Println("Stopped container:", c.name)
 }
