@@ -46,6 +46,9 @@ func main() {
     options := types.ContainerListOptions{All: true}
     containers, err := cli.ContainerList(context.Background(), options)
     for _, cont := range containers {
+        if len(cont.Names) == 0 {
+            continue;
+        }
         log.Println("Found container:", cont.Names[0][1:])
         h.containers[cont.Names[0][1:]] = &Container{name: cont.Names[0][1:], id: cont.ID, started: false, h: &h, quit: make(chan int), mgoSession: session}
         go h.containers[cont.Names[0][1:]].statusUpdater()
@@ -72,7 +75,7 @@ func main() {
                 break
             }
         }
-        log.Println(list)
+
         for _, cont := range list {
             split := strings.Split(cont, ":")
             status, _ := redis.String(dbw.write("GET", cont))
@@ -99,6 +102,9 @@ func main() {
         options = types.ContainerListOptions{All: true}
         containers, err = cli.ContainerList(context.Background(), options)
         for _, cont := range containers {
+            if len(cont.Names) == 0 {
+                continue;
+            }
             // Check if container is supposed to be running
             status, _ := redis.String(dbw.write("GET", "containers:" + cont.Names[0][1:] + ":status"))
             if status == "" { // Container removed
