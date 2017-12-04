@@ -86,20 +86,20 @@ func (c *Container) statusUpdater() {
                     processes = append(processes, proc)
                 }
                 res, _ := json.Marshal(processes)
-                c.h.dbw.write("SET", "containers:" + c.name + ":processes", res)
+                c.h.cdb.setprocesslist(c.name, res)
             } else {
-                c.h.dbw.write("SET", "containers:" + c.name + ":processes", "[]")
-        }
-        // read, err := c.h.cli.ContainerStats(context.TODO(), c.id, false)
-        // if err == nil {
-        //     out := make([]byte, 1788)
-        //     read.Read(out)
-        //     read.Close()
-        // }
-        if exit {
-            break;
-        }
-        time.Sleep(100 * time.Millisecond)
+                c.h.cdb.setprocesslist(c.name, "[]")
+            }
+            // read, err := c.h.cli.ContainerStats(context.TODO(), c.id, false)
+            // if err == nil {
+            //     out := make([]byte, 1788)
+            //     read.Read(out)
+            //     read.Close()
+            // }
+            if exit {
+                break;
+            }
+            time.Sleep(100 * time.Millisecond)
         }
     }
 }

@@ -12,9 +12,16 @@ import (
     "gopkg.in/mgo.v2"
 )
 
+type containerdb interface {
+    init()
+    containerlist() []string
+    containerstatus(c string) string
+    setprocesslist(c string, proclist string)
+}
+
 type hub struct {
     cli *client.Client
-    dbw *dbwriter
+    cdb *contdb
     containers map[string]*Container
 }
 
@@ -31,14 +38,8 @@ func main() {
     if err != nil {
         panic(err)
     }
-    // Connect to redis database
-    c, err := redis.Dial("tcp", ":6379")
-    if err != nil {
-        panic(err)
-    }
-    dbw := dbwriter{redisconn: &c, commChannel: make(chan command, 2)}
-    go dbw.writer()
-    h := hub{cli: cli, dbw: &dbw, containers: make(map[string]*Container)}
+    cdb := redisdb{dbw: nil}
+    h := hub{cli: cli, cdb: &cdb, containers: make(map[string]*Container)}
     // Connect to MongoDB database
     session, err := mgo.Dial(":3001")
     defer session.Close()
@@ -62,24 +63,11 @@ func main() {
     }
     for {
         // Get the containers that should be running
-        iter := 0
-        var list []string
-        for {
-            reply, _ := redis.Values(dbw.write("SCAN", iter, "match", "containers:*:status"))
-            var temp int
-            var templist []string
-            reply, _ = redis.Scan(reply, &temp, &templist)
-            iter = temp
-            list = append(list, templist...)
-            if iter == 0 {
-                break
-            }
-        }
-
+        list := cdb.containerlist()
         for _, cont := range list {
             split := strings.Split(cont, ":")
-            status, _ := redis.String(dbw.write("GET", cont))
-            cont = split[1];
+            cont = split[1]
+            status := cdb.containerstatus(cont)
             if val, ok := h.containers[cont]; ok { // If container exists, start it
                 if status == "running" {
                     if !val.started {
@@ -106,7 +94,7 @@ func main() {
                 continue;
             }
             // Check if container is supposed to be running
-            status, _ := redis.String(dbw.write("GET", "containers:" + cont.Names[0][1:] + ":status"))
+            status := cdb.containerstatus(cont.Names[0][1:])
             if status == "" { // Container removed
                 if h.containers[cont.Names[0][1:]].started {
                     h.containers[cont.Names[0][1:]].stop()
