@@ -8,7 +8,7 @@ type redisdb struct {
     dbwriter *dbw
 }
 
-function (r redisdb) init() {
+func (r redisdb) init() {
     // Connect to redis database
     c, err := redis.Dial("tcp", ":6379")
     if err != nil {
@@ -18,7 +18,7 @@ function (r redisdb) init() {
     go r.dbw.writer()
 }
 
-function (r redisdb) containerlist() []string {
+func (r redisdb) containerlist() []string {
     iter := 0
     var list []string
     for {
@@ -35,11 +35,11 @@ function (r redisdb) containerlist() []string {
     return list
 }
 
-function (r redisdb) containerstatus(c string) string {
+func (r redisdb) containerstatus(c string) string {
     status, _ := redis.String(r.dbw.write("GET", "containers:" + c + ":status"))
     return status
 }
 
-function (r redisdb) setprocesslist(c string, proclist string) {
+func (r redisdb) setprocesslist(c string, proclist string) {
     r.dbw.write("SET", "containers:" + c + ":processes", proclist)
 }
