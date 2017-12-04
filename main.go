@@ -39,6 +39,7 @@ func main() {
         panic(err)
     }
     cdb := redisdb{dbw: nil}
+    cdb.init()
     h := hub{cli: cli, cdb: &cdb, containers: make(map[string]*Container)}
     // Connect to MongoDB database
     session, err := mgo.Dial(":3001")
