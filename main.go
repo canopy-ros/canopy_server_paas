@@ -20,7 +20,7 @@ type containerdb interface {
 
 type hub struct {
     cli *client.Client
-    cdb *contdb
+    cdb *containerdb
     containers map[string]*Container
 }
 

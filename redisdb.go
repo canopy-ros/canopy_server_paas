@@ -5,7 +5,7 @@ import (
 )
 
 type redisdb struct {
-    dbwriter *dbw
+    dbw *dbwriter
 }
 
 func (r redisdb) init() {
@@ -14,7 +14,7 @@ func (r redisdb) init() {
     if err != nil {
         panic(err)
     }
-    r.dbw := dbwriter{redisconn: &c, commChannel: make(chan command, 2)}
+    r.dbw = dbwriter{redisconn: &c, commChannel: make(chan command, 2)}
     go r.dbw.writer()
 }
 
